@@ -4,9 +4,7 @@ namespace EventToolkit
 {
     public static class EventMonitor
     {
-        public static IEventMonitor Current {
-            get { return EventCore.CoreBus; }
-        }
+        public static IEventMonitor Current => EventCore.CoreBus;
 
         public static IEventSubscription Monitor<TEvent>(Action<TEvent> handler)
             where TEvent : IEvent

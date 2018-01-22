@@ -1,148 +1,93 @@
 ﻿using System;
 using EventToolkit;
-using Kekiri;
 using FluentAssertions;
 using System.Transactions;
+using Kekiri.TestRunner.xUnit;
 
 namespace Specs
 {
-    [Scenario("Transactions")]
-    public class When_a_transaction_is_completed : EventSpec
+    public class TransactionScenarios : EventScenarios
     {
         bool notified;
         TransactionScope trx;
 
-        [Given]
-        public void given_a_transaction_scope()
+        [Scenario]
+        public void Can_recieve_notifications_in_a_transaction()
+        {
+            Given(a_transaction_scope)
+                .And(an_event_subscription)
+                .And(an_event_is_published);
+            When(the_transaction_is_committed);
+            Then(it_notifies_the_subscribers);
+        }
+
+        [Scenario]
+        public void Subscribers_not_notified_when_transaction_is_cancelled()
+        {
+            Given(a_transaction_scope)
+                .And(an_event_subscription)
+                .And(an_event_is_published);
+            When(the_transaction_is_cancelled);
+            Then(it_does_not_notify_the_subscribers);
+        }
+
+        [Scenario]
+        public void Exception_in_subscriber_does_not_cancel_transaction()
+        {
+            Given(a_transaction_scope)
+                .And(an_unsafe_subscription)
+                .And(an_event_subscription)
+                .And(an_event_is_published);
+            When(the_transaction_is_committed);
+            Then(the_next_subscriber_is_notified)
+                .And(no_exception_is_raised_outside_the_transaction);
+        }
+        
+        void a_transaction_scope()
         {
             trx = new TransactionScope();
         }
 
-        [Given]
-        public void given_an_event_subscription()
+        void an_event_subscription()
         {
             EventBus.Subscribe<Event>(_ => notified = true);
         }
 
-        [Given]
-        public void given_an_event_is_published()
-        {
-            EventBus.Publish(new Event());
-        }
-
-        [Given]
-        public void given_the_transaction_is_committed()
-        {
-            trx.Complete();
-        }
-
-        [When]
-        public void when()
-        {
-            trx.Dispose();
-        }
-
-        [Then]
-        public void then_it_notifies_the_subscribers()
-        {
-            notified.Should().BeTrue();
-        }
-    }
-
-    [Scenario("Transactions")]
-    public class When_a_transaction_is_cancelled : EventSpec
-    {
-        bool notified;
-        TransactionScope trx;
-
-        [Given]
-        public void given_a_transaction_scope()
-        {
-            trx = new TransactionScope();
-        }
-
-        [Given]
-        public void given_an_event_subscription()
-        {
-            EventBus.Subscribe<Event>(_ => notified = true);
-        }
-
-        [Given]
-        public void given_an_event_is_published()
-        {
-            EventBus.Publish(new Event());
-        }
-
-//        [Given]
-//        public void given_the_transaction_is_cancelled()
-//        {
-//            Transaction.Current.Rollback();
-//        }
-
-        [When]
-        public void when()
-        {
-            trx.Dispose();
-        }
-
-        [Then]
-        public void then_it_notifies_the_subscribers()
-        {
-            notified.Should().BeFalse();
-        }
-    }
-
-    [Scenario("Transactions")]
-    public class When_an_exception_happens_while_notifying_subscribers : EventSpec
-    {
-        bool notified;
-        TransactionScope trx;
-
-        [Given]
-        public void given_a_transaction_scope()
-        {
-            trx = new TransactionScope();
-        }
-
-        [Given]
-        public void given_an_unsafe_event_subscription()
+        void an_unsafe_subscription()
         {
             EventBus.Subscribe<Event>(_ => { throw new StackOverflowException(); });
         }
 
-        [Given]
-        public void given_a_safe_event_subscription()
-        {
-            EventBus.Subscribe<Event>(_ => notified = true);
-        }
-
-        [Given]
-        public void given_an_event_is_published()
+        void an_event_is_published()
         {
             EventBus.Publish(new Event());
         }
 
-        [Given]
-        public void given_the_transaction_is_committed()
+        void the_transaction_is_committed()
         {
             trx.Complete();
+            trx.Dispose();
         }
 
-        [When]
-        public void when()
+        void the_transaction_is_cancelled()
         {
             trx.Dispose();
         }
 
-        [Then]
-        public void then_no_exception_is_raised_outside_the_transaction()
-        {
-        }
-
-        [Then]
-        public void then_the_next_subscriber_is_notified()
+        void it_notifies_the_subscribers()
         {
             notified.Should().BeTrue();
         }
+
+        void it_does_not_notify_the_subscribers()
+        {
+            notified.Should().BeFalse();
+        }
+    
+        void no_exception_is_raised_outside_the_transaction()
+        {
+        }
+
+        void the_next_subscriber_is_notified() => it_notifies_the_subscribers();
     }
 }

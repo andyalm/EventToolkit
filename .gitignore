@@ -8,9 +8,10 @@
 
 _ReSharper.*
 *crunch*
+.idea/
+.vs/
 
 .pack/
-packages/
 .specs.xml
 
 !*.proj

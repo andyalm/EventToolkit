@@ -1,20 +1,14 @@
 using System;
+using System.Threading;
 
 namespace EventToolkit
 {
     public class EventBus
     {
-        [ThreadStatic]
-        static ScopedEventBus bus;
-        static ScopedEventBus Bus {
-            get {
-                return bus ?? (bus = EventCore.CreateScope());
-            }
-        }
+        static AsyncLocal<ScopedEventBus> bus = new AsyncLocal<ScopedEventBus>();
+        static ScopedEventBus Bus => bus.Value ?? (bus.Value = EventCore.CreateScope());
 
-        public static IEventBus Current {
-            get { return Bus; }
-        }
+        public static IEventBus Current => Bus;
 
         public static IEventSubscription Subscribe<TEvent>(Action<TEvent> handler)
           where TEvent : IEvent
@@ -41,9 +35,10 @@ namespace EventToolkit
 
         public static void Clear()
         {
-            if (bus == null) return;
-            bus.Clear();
-            bus = null;
+            if (bus.Value == null) return;
+            var value = bus.Value;
+            bus.Value = null;
+            value.Clear();
         }
     }
 }

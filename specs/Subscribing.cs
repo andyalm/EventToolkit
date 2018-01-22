@@ -2,148 +2,84 @@ using System;
 using EventToolkit;
 using Kekiri;
 using FluentAssertions;
+using Kekiri.TestRunner.xUnit;
 
 namespace Specs
 {
-    [Scenario("Subscribing")]
-    public class When_subscribing_to_an_event_with_a_delegate : EventSpec
+    public class SubscribingScenarios : EventScenarios
     {
         IEventSubscription subscription;
+        
+        [Scenario]
+        public void Can_subscribe_to_an_event_with_a_delegate()
+        {
+            When(subscribing_with_a_delegate);
+            Then(it_creates_a_subscription);
+        }
 
-        [When]
-        public void when()
+        [Scenario]
+        public void Can_subscribe_to_an_event_with_a_subscriber()
+        {
+            When(subscribing_with_a_subscriber);
+            Then(it_creates_a_subscription);
+        }
+
+        [Scenario]
+        public void Can_subscribe_with_the_current_event_bus()
+        {
+            When(subscribing_with_the_current_event_bus);
+            Then(it_creates_a_subscription);
+        }
+
+        [Scenario]
+        public void Cannot_subscribe_with_a_null_delegate()
+        {
+            When(attempting_to_subscribe_with_a_null_delegate).Throws();
+            Then(argumentnullexception_is_thrown);
+        }
+
+        [Scenario]
+        public void Cannot_subscribe_with_a_null_subscriber()
+        {
+            When(attempting_to_subscribe_with_a_null_subscriber).Throws();
+            Then(argumentnullexception_is_thrown);
+        }
+
+        
+        
+        void subscribing_with_a_delegate()
         {
             subscription = EventBus.Subscribe<Event>(_ => { });
         }
 
-        [Then]
-        public void then_it_creates_a_subscription()
-        {
-            subscription.Should().NotBeNull();
-        }
-    }
-
-    [Scenario("Subscribing")]
-    public class When_subscribing_to_an_event_with_a_subscriber : EventSpec
-    {
-        IEventSubscription subscription;
-
-        [When]
-        public void when()
+        void subscribing_with_a_subscriber()
         {
             subscription = EventBus.Subscribe<Event>(new SimpleSubscriber());
         }
 
-        [Then]
-        public void then_it_creates_a_subscription()
-        {
-            subscription.Should().NotBeNull();
-        }
-    }
-
-    [Scenario("Subscribing")]
-    public class When_subscribing_to_the_current_event_bus : EventSpec
-    {
-        IEventSubscription subscription;
-
-        [When]
-        public void when()
+        void subscribing_with_the_current_event_bus()
         {
             subscription = EventBus.Current.Subscribe<Event>(_ => { });
         }
 
-        [Then]
-        public void then_it_creates_a_subscription()
-        {
-            subscription.Should().NotBeNull();
-        }
-    }
-
-    [Scenario("Subscribing")]
-    public class When_subscribing_to_an_event_with_a_null_delegate_reference : EventSpec
-    {
-        Exception exception;
-
-        [When, Throws]
-        public void when()
+        void attempting_to_subscribe_with_a_null_delegate()
         {
             EventBus.Subscribe((Action<Event>)null);
         }
 
-        [Then]
-        public void then_it_rejects_the_subscription()
-        {
-            Catch<ArgumentNullException>();
-        }
-    }
-
-    [Scenario("Subscribing")]
-    public class When_subscribing_to_an_event_with_a_null_subscriber_reference : EventSpec
-    {
-        Exception exception;
-
-        [When, Throws]
-        public void when()
+        void attempting_to_subscribe_with_a_null_subscriber()
         {
             EventBus.Subscribe<Event>((IEventSubscriber)null);
         }
 
-        [Then]
-        public void then_it_rejects_the_subscription()
+        void it_creates_a_subscription()
         {
-            Catch<ArgumentNullException>();
-        }
-    }
-
-    [Scenario("Subscribing")]
-    public class When_a_delegate_subscription_is_disposed : EventSpec
-    {
-        bool notified;
-        IEventSubscription subscription;
-
-        [Given]
-        public void given()
-        {
-            subscription = EventBus.Subscribe<Event>(_ => notified = true);
+            subscription.Should().NotBeNull();
         }
 
-        [When]
-        public void when()
+        void argumentnullexception_is_thrown()
         {
-            subscription.Dispose();
-        }
-
-        [Then]
-        public void then_it_does_not_receive_events()
-        {
-            EventBus.Publish(new Event());
-            notified.Should().BeFalse();
-        }
-    }
-
-    [Scenario("Subscribing")]
-    public class When_a_subscription_is_disposed : EventSpec
-    {
-        bool notified;
-        SimpleSubscriber subscriber = new SimpleSubscriber();
-        IEventSubscription subscription;
-
-        [Given]
-        public void given()
-        {
-            subscription = EventBus.Subscribe<Event>(subscriber);
-        }
-
-        [When]
-        public void when()
-        {
-            subscription.Dispose();
-        }
-
-        [Then]
-        public void then_it_disposes_the_subscribers()
-        {
-            subscriber.disposed.Should().BeTrue();
+            Catch<ArgumentNullException>().Should().NotBeNull();
         }
     }
 }
